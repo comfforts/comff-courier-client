@@ -62,8 +62,8 @@ type courierClient struct {
 
 func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClient, error) {
 	tlsConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CertFile: config.CertFile(config.ClientCertFile),
-		KeyFile:  config.CertFile(config.ClientKeyFile),
+		CertFile: config.CertFile(config.CourierClientCertFile),
+		KeyFile:  config.CertFile(config.CourierClientKeyFile),
 		CAFile:   config.CertFile(config.CAFile),
 		Server:   false,
 	})
