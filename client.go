@@ -3,19 +3,21 @@ package client
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"github.com/comfforts/comff-courier-client/internal/config"
-	api "github.com/comfforts/comff-courier/api/v1"
+	config "github.com/comfforts/comff-config"
 	"github.com/comfforts/logger"
+
+	api "github.com/comfforts/comff-courier/api/v1"
 )
 
-const SERVICE_PORT = 55051
-const SERVICE_DOMAIN = "127.0.0.1"
+const DEFAULT_SERVICE_PORT = "55051"
+const DEFAULT_SERVICE_HOST = "127.0.0.1"
 
 type ContextKey string
 
@@ -61,11 +63,8 @@ type courierClient struct {
 }
 
 func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClient, error) {
-	tlsConfig, err := config.SetupTLSConfig(config.TLSConfig{
-		CertFile: config.CertFile(config.CourierClientCertFile),
-		KeyFile:  config.CertFile(config.CourierClientKeyFile),
-		CAFile:   config.CertFile(config.CAFile),
-		Server:   false,
+	tlsConfig, err := config.SetupTLSConfig(&config.ConfigOpts{
+		Target: config.COURIER_CLIENT,
 	})
 	if err != nil {
 		logger.Error("error setting shops client TLS", zap.Error(err))
@@ -76,7 +75,16 @@ func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClien
 		grpc.WithTransportCredentials(tlsCreds),
 	}
 
-	serviceAddr := fmt.Sprintf("%s:%d", SERVICE_DOMAIN, SERVICE_PORT)
+	servicePort := os.Getenv("COURIER_SERVICE_PORT")
+	if servicePort == "" {
+		servicePort = DEFAULT_SERVICE_PORT
+	}
+	serviceHost := os.Getenv("COURIER_SERVICE_HOST")
+	if serviceHost == "" {
+		serviceHost = DEFAULT_SERVICE_HOST
+	}
+
+	serviceAddr := fmt.Sprintf("%s:%s", serviceHost, servicePort)
 	// with load balancer
 	// serviceAddr = fmt.Sprintf("%s:///%s", loadbalance.ShopResolverName, serviceAddr)
 	// serviceAddr = fmt.Sprintf("%s:///%s", "shops", serviceAddr)
