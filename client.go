@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 
 	config "github.com/comfforts/comff-config"
 	"github.com/comfforts/logger"
@@ -37,6 +38,7 @@ type ClientOption struct {
 	DialTimeout      time.Duration
 	KeepAlive        time.Duration
 	KeepAliveTimeout time.Duration
+	Caller           string
 }
 
 type Client interface {
@@ -60,6 +62,7 @@ type courierClient struct {
 	logger logger.AppLogger
 	client api.CouriersClient
 	conn   *grpc.ClientConn
+	opts   *ClientOption
 }
 
 func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClient, error) {
@@ -101,11 +104,12 @@ func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClien
 		client: client,
 		logger: logger,
 		conn:   conn,
+		opts:   clientOpts,
 	}, nil
 }
 
 func (cc *courierClient) RegisterCourier(ctx context.Context, req *api.AddCourierRequest, opts ...grpc.CallOption) (*api.AddCourierResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := cc.contextWithOptions(ctx, cc.opts)
 	defer cancel()
 
 	resp, err := cc.client.RegisterCourier(ctx, req)
@@ -117,7 +121,7 @@ func (cc *courierClient) RegisterCourier(ctx context.Context, req *api.AddCourie
 }
 
 func (cc *courierClient) UpdateCourier(ctx context.Context, req *api.UpdateCourierRequest, opts ...grpc.CallOption) (*api.UpdateCourierResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := cc.contextWithOptions(ctx, cc.opts)
 	defer cancel()
 
 	resp, err := cc.client.UpdateCourier(ctx, req)
@@ -129,7 +133,7 @@ func (cc *courierClient) UpdateCourier(ctx context.Context, req *api.UpdateCouri
 }
 
 func (cc *courierClient) GetCourier(ctx context.Context, req *api.GetCourierRequest, opts ...grpc.CallOption) (*api.GetCourierResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := cc.contextWithOptions(ctx, cc.opts)
 	defer cancel()
 
 	resp, err := cc.client.GetCourier(ctx, req)
@@ -141,7 +145,7 @@ func (cc *courierClient) GetCourier(ctx context.Context, req *api.GetCourierRequ
 }
 
 func (cc *courierClient) SearchCouriers(ctx context.Context, req *api.SearchCouriersRequest, opts ...grpc.CallOption) (*api.SearchCouriersResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := cc.contextWithOptions(ctx, cc.opts)
 	defer cancel()
 
 	resp, err := cc.client.SearchCouriers(ctx, req)
@@ -153,7 +157,7 @@ func (cc *courierClient) SearchCouriers(ctx context.Context, req *api.SearchCour
 }
 
 func (cc *courierClient) DeleteCourier(ctx context.Context, req *api.DeleteCourierRequest, opts ...grpc.CallOption) (*api.DeleteResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := cc.contextWithOptions(ctx, cc.opts)
 	defer cancel()
 
 	resp, err := cc.client.DeleteCourier(ctx, req)
@@ -170,4 +174,14 @@ func (cc *courierClient) Close() error {
 		return err
 	}
 	return nil
+}
+
+func (cc *courierClient) contextWithOptions(ctx context.Context, opts *ClientOption) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(ctx, cc.opts.DialTimeout)
+	if cc.opts.Caller != "" {
+		md := metadata.New(map[string]string{"service-client": cc.opts.Caller})
+		ctx = metadata.NewOutgoingContext(ctx, md)
+	}
+
+	return ctx, cancel
 }
