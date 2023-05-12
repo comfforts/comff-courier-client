@@ -33,6 +33,7 @@ var (
 )
 
 const CourierClientContextKey = ContextKey("courier-client")
+const DefaultClientName = "comfforts-courier-client"
 
 type ClientOption struct {
 	DialTimeout      time.Duration
@@ -66,6 +67,10 @@ type courierClient struct {
 }
 
 func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClient, error) {
+	if clientOpts.Caller == "" {
+		clientOpts.Caller = DefaultClientName
+	}
+
 	tlsConfig, err := config.SetupTLSConfig(&config.ConfigOpts{
 		Target: config.COURIER_CLIENT,
 	})
