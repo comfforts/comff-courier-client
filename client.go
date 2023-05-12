@@ -94,12 +94,12 @@ func NewClient(logger logger.AppLogger, clientOpts *ClientOption) (*courierClien
 
 	conn, err := grpc.Dial(serviceAddr, opts...)
 	if err != nil {
-		logger.Error("client failed to connect", zap.Error(err))
+		logger.Error("courier client failed to connect", zap.Error(err))
 		return nil, err
 	}
 
 	client := api.NewCouriersClient(conn)
-
+	logger.Info("courier client connected", zap.String("host", serviceHost), zap.String("port", servicePort))
 	return &courierClient{
 		client: client,
 		logger: logger,
