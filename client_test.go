@@ -53,13 +53,15 @@ func setup(t *testing.T, logger logger.AppLogger) (
 func testCourierCRUD(t *testing.T, sc Client) {
 	t.Helper()
 
-	rqstr, name, org, street, state := "client-courier-crud-test@gmail.com", "Client courier CRUD test", "client-courier-crud-test", "234 Cabrillo Av", "CA"
+	rqstr, name, org, state := "client-courier-crud-test@gmail.com", "Client courier CRUD test", "client-courier-crud-test", "CA"
 	acr := api.AddCourierRequest{
 		RequestedBy: rqstr,
 		Name:        name,
 		Org:         org,
+		Street:      "1066 Kiely Blvd",
 		City:        comffC.SANTA_CLARA,
 		PostalCode:  comffC.P95051,
+		State:       state,
 		Country:     comffC.US,
 		Height:      6,
 		Width:       18,
@@ -84,7 +86,7 @@ func testCourierCRUD(t *testing.T, sc Client) {
 	ucr := api.UpdateCourierRequest{
 		Id:          resp.Courier.Id,
 		RequestedBy: rqstr,
-		Street:      street,
+		Street:      "1066 Kiely Blvd",
 		City:        comffC.SANTA_CLARA,
 		State:       state,
 		PostalCode:  comffC.P95051,
